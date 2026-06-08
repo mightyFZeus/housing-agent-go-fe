@@ -8,6 +8,7 @@ export default defineConfig({
   build: {
     sourcemap: 'hidden',
   },
+  
   server: {
     proxy: {
       '/health': {
@@ -33,6 +34,7 @@ export default defineConfig({
         },
       },
     },
+    cors: true,
   },
   plugins: [
     react({

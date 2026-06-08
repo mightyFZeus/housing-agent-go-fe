@@ -41,6 +41,7 @@ async function fetchWithTimeout(
 export const API_BASE =
   import.meta.env.VITE_API_URL || '';
 
+
 export async function getHealth(signal?: AbortSignal): Promise<HealthOk> {
   const res = await fetchWithTimeout(
   `${API_BASE}/health`,
