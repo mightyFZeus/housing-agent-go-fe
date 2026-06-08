@@ -10,10 +10,14 @@ export type SearchOk = {
 
 async function fetchWithTimeout(
   input: RequestInfo | URL,
-  options: {
+   options: {
     signal?: AbortSignal
     timeoutMs: number
+    method?: string
+    headers?: HeadersInit
+    body?: BodyInit
   },
+
 ): Promise<Response> {
   const controller = new AbortController()
   let timedOut = false
@@ -29,7 +33,12 @@ async function fetchWithTimeout(
   }, options.timeoutMs)
 
   try {
-    return await fetch(input, { signal: controller.signal })
+ return await fetch(input, {
+  signal: controller.signal,
+  method: options.method,
+  headers: options.headers,
+  body: options.body,
+})
   } catch (err: unknown) {
     if (timedOut) throw new Error('Request timed out')
     throw err
@@ -177,13 +186,19 @@ export async function searchLaw(
     onUpdate?: (partial: SearchPartial) => void
   },
 ): Promise<SearchOk['data']> {
-  const url = `${API_BASE}/search?query=${encodeURIComponent(query)}`
-
   let lastError: unknown = null
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const res = await fetchWithTimeout(url, { signal: options?.signal, timeoutMs: 60000 })
+      const res = await fetchWithTimeout(`${API_BASE}/search`, {
+        signal: options?.signal,
+        timeoutMs: 60000,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query }),
+      })
 
       if (!res.ok) {
         const message = await readErrorMessage(res)
@@ -199,9 +214,15 @@ export async function searchLaw(
       const body = res.body
       if (!body) {
         const json = (await res.json().catch(() => null)) as unknown
-        if (json && typeof (json as SearchOk).data?.answer === 'string' && typeof (json as SearchOk).data?.context === 'string') {
+
+        if (
+          json &&
+          typeof (json as SearchOk).data?.answer === 'string' &&
+          typeof (json as SearchOk).data?.context === 'string'
+        ) {
           return (json as SearchOk).data
         }
+
         throw new Error('Unexpected response from server')
       }
 
@@ -231,12 +252,15 @@ export async function searchLaw(
         if (mode === 'sse') {
           const extracted = extractSseEvents(buffer)
           buffer = extracted.rest
+
           for (const eventText of extracted.events) {
             for (const dataText of parseSseEvent(eventText)) {
               let payload: unknown = dataText
+
               if (dataText.startsWith('{') || dataText.startsWith('[')) {
                 payload = JSON.parse(dataText)
               }
+
               partial = applyStreamPayload(payload, partial)
               options?.onUpdate?.(partial)
             }
@@ -247,8 +271,10 @@ export async function searchLaw(
         while (true) {
           const idx = buffer.indexOf('\n')
           if (idx === -1) break
+
           const line = buffer.slice(0, idx).trim()
           buffer = buffer.slice(idx + 1)
+
           if (line.length === 0) continue
 
           if (mode === 'unknown' && line.startsWith('data:')) {
@@ -258,6 +284,7 @@ export async function searchLaw(
           }
 
           mode = 'ndjson'
+
           const payload = JSON.parse(line) as unknown
           partial = applyStreamPayload(payload, partial)
           options?.onUpdate?.(partial)
@@ -265,51 +292,33 @@ export async function searchLaw(
       }
 
       const tail = decoder.decode()
-      if (tail.length > 0) {
-        raw += tail
-        buffer += tail
-      }
+      buffer += tail
 
       if (mode === 'sse') {
         const extracted = extractSseEvents(buffer)
+
         for (const eventText of extracted.events) {
           for (const dataText of parseSseEvent(eventText)) {
             let payload: unknown = dataText
+
             if (dataText.startsWith('{') || dataText.startsWith('[')) {
               payload = JSON.parse(dataText)
             }
+
             partial = applyStreamPayload(payload, partial)
             options?.onUpdate?.(partial)
           }
         }
+
         return partial
       }
 
       const tailLine = buffer.trim()
-      if (tailLine.length > 0 && (tailLine.startsWith('{') || tailLine.startsWith('['))) {
-        const payload = (() => {
-          try {
-            return JSON.parse(tailLine) as unknown
-          } catch {
-            return null
-          }
-        })()
 
-        if (payload !== null) {
-          partial = applyStreamPayload(payload, partial)
-          options?.onUpdate?.(partial)
-          mode = 'ndjson'
-        }
-      }
-
-      if (mode === 'unknown') {
-        const trimmed = raw.trim()
-        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-          const json = JSON.parse(trimmed) as unknown
-          partial = applyStreamPayload(json, partial)
-          options?.onUpdate?.(partial)
-          return partial
-        }
+      if (tailLine.startsWith('{') || tailLine.startsWith('[')) {
+        const json = JSON.parse(tailLine) as unknown
+        partial = applyStreamPayload(json, partial)
+        options?.onUpdate?.(partial)
       }
 
       return partial
