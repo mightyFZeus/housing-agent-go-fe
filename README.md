@@ -32,8 +32,8 @@ Open the dev server URL shown in the terminal.
 
 ## Proxy / CORS
 The backend does not add CORS headers, so the frontend dev server proxies requests:
-- `/health` → `http://127.0.0.1:8080/health`
-- `/search` → `http://127.0.0.1:8080/search`
+- `/health` → `https://housing-agent-go.onrender.com/health`
+- `/search` → `https://housing-agent-go.onrender.com/search`
 
 Config: [vite.config.ts](file:///Users/mightyzeus/Desktop/housing-agent-fe/vite.config.ts)
 

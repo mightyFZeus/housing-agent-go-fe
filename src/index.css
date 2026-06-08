@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --app-bg-0: #07070a;
+  --app-bg-1: #0c0b12;
+  --app-amber: #f6c35b;
+}
+
+:root {
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji";
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+}
+
+.bg-app {
+  background:
+    radial-gradient(1200px 800px at 20% -10%, rgba(246, 195, 91, 0.15), transparent 55%),
+    radial-gradient(900px 700px at 90% 10%, rgba(155, 140, 255, 0.12), transparent 60%),
+    radial-gradient(900px 900px at 40% 110%, rgba(52, 211, 153, 0.08), transparent 60%),
+    linear-gradient(180deg, var(--app-bg-0), var(--app-bg-1));
+}
