@@ -17,6 +17,8 @@ export default function Home() {
   const validation = useMemo(() => validateQuery(rawQuery), [rawQuery])
   const isBusy = state.state === 'loading' || state.state === 'streaming'
 
+
+
   useEffect(() => {
     if (rawQuery.trim().length === 0) reset()
   }, [rawQuery, reset])
