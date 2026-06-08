@@ -38,8 +38,17 @@ async function fetchWithTimeout(
   }
 }
 
+export const API_BASE =
+  import.meta.env.VITE_API_URL || '';
+
 export async function getHealth(signal?: AbortSignal): Promise<HealthOk> {
-  const res = await fetchWithTimeout('/health', { signal, timeoutMs: 2000 })
+  const res = await fetchWithTimeout(
+  `${API_BASE}/health`,
+  {
+    signal,
+    timeoutMs: 2000,
+  },
+)
   const json = (await res.json().catch(() => null)) as unknown
 
   if (!res.ok) {
@@ -167,7 +176,7 @@ export async function searchLaw(
     onUpdate?: (partial: SearchPartial) => void
   },
 ): Promise<SearchOk['data']> {
-  const url = `/search?query=${encodeURIComponent(query)}`
+  const url = `${API_BASE}/search?query=${encodeURIComponent(query)}`
 
   let lastError: unknown = null
 
