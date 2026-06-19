@@ -3,7 +3,6 @@ import { cn } from '@/lib/utils'
 
 const EXAMPLES = [
     'What notice period is required to quit a monthly tenancy in Lagos?',
-    'Can a landlord increase rent without serving notice in Lagos?',
     'What is the difference between a tenant and a licensee?',
     'Can a tenant be evicted without a court order in Lagos State?',
 ]

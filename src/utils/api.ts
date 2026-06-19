@@ -95,7 +95,34 @@ function appendStreamText(prev: string, next: string) {
   if (prev.length === 0) return next
   if (next.length === 0) return prev
 
+  if (/\s$/.test(prev) || /^\s/.test(next)) return prev + next
+
+  const last = prev[prev.length - 1]
+  const first = next[0]
+  const isAlnum = (char: string) => /[A-Za-z0-9]/.test(char)
+
+  if (isAlnum(last) && isAlnum(first)) {
+    if (looksLikeCharacterFragment(prev, next) || looksLikeWordContinuation(next)) return prev + next
+    return `${prev} ${next}`
+  }
+
   return prev + next
+}
+
+function looksLikeCharacterFragment(prev: string, next: string) {
+  const prevWord = prev.match(/[A-Za-z0-9]+$/)?.[0] ?? ''
+  const nextWord = next.match(/^[A-Za-z0-9]+/)?.[0] ?? ''
+
+  return prevWord.length === 1 && nextWord.length === 1
+}
+
+function looksLikeWordContinuation(next: string) {
+  const nextWord = next.match(/^[A-Za-z]+/)?.[0] ?? ''
+  if (nextWord.length === 0) return false
+
+  return /^(?:s|es|ed|er|est|ing|ly|al|ary|ory|ous|ive|able|ible|ful|less|tion|sion|ment|ness|ance|ence|ancy|ency|ars)$/i.test(
+    nextWord,
+  )
 }
 
 function applyStreamPayload(payload: unknown, state: SearchPartial): SearchPartial {
