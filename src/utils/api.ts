@@ -91,23 +91,16 @@ type SearchPartial = {
   context: string
 }
 
-function appendSmart(prev: string, next: string) {
+function appendStreamText(prev: string, next: string) {
   if (prev.length === 0) return next
   if (next.length === 0) return prev
 
-  if (/\s$/.test(prev) || /^\s/.test(next)) return prev + next
-
-  const last = prev[prev.length - 1]
-  const first = next[0]
-
-  const isAlnum = (c: string) => /[A-Za-z0-9]/.test(c)
-  if (next.length >= 2 && isAlnum(last) && isAlnum(first)) return `${prev} ${next}`
   return prev + next
 }
 
 function applyStreamPayload(payload: unknown, state: SearchPartial): SearchPartial {
   if (typeof payload === 'string') {
-    return { ...state, answer: appendSmart(state.answer, payload) }
+    return { ...state, answer: appendStreamText(state.answer, payload) }
   }
 
   if (!payload || typeof payload !== 'object') return state
@@ -129,7 +122,7 @@ function applyStreamPayload(payload: unknown, state: SearchPartial): SearchParti
     record.content
 
   if (typeof delta === 'string') {
-    return { ...state, answer: appendSmart(state.answer, delta) }
+    return { ...state, answer: appendStreamText(state.answer, delta) }
   }
 
   const answer = record.answer
@@ -232,7 +225,6 @@ export async function searchLaw(
 
       let firstChunk = ''
       let buffer = ''
-      let raw = ''
       let partial: SearchPartial = { answer: '', context: '' }
       let mode: 'unknown' | 'sse' | 'ndjson' = 'unknown'
 
@@ -241,7 +233,6 @@ export async function searchLaw(
         if (read.done) break
 
         const chunkText = decoder.decode(read.value, { stream: true })
-        raw += chunkText
         buffer += chunkText
 
         if (firstChunk.length === 0) {

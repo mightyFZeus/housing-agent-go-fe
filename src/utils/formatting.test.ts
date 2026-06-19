@@ -39,6 +39,26 @@ describe('normalizeAnswerText', () => {
     expect(out).toContain('arrears')
     expect(out).toContain('six (6) months')
   })
+
+  it('keeps hyphenated terms intact instead of turning them into bullets', () => {
+    const input = 'A half-yearly tenant with a non-payment issue needs a court-approved process.'
+    const out = normalizeAnswerText(input)
+
+    expect(out).toContain('half-yearly')
+    expect(out).toContain('non-payment')
+    expect(out).toContain('court-approved')
+    expect(out).not.toContain('\n- yearly')
+    expect(out).not.toContain('\n- payment')
+    expect(out).not.toContain('\n- approved')
+  })
+
+  it('keeps section subsections tight while normalizing surrounding spaces', () => {
+    const input = 'Section7(6)says a yearly tenant needs six(6)months notice.'
+    const out = normalizeAnswerText(input)
+
+    expect(out).toContain('Section 7(6)')
+    expect(out).toContain('six (6) months')
+  })
 })
 
 describe('normalizeContextText', () => {

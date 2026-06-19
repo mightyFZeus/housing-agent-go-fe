@@ -70,4 +70,29 @@ describe('searchLaw streaming', () => {
       globalThis.fetch = originalFetch
     }
   })
+
+  it('preserves word fragments exactly as they stream in', async () => {
+    const originalFetch = globalThis.fetch
+
+    globalThis.fetch = vi.fn(async () => {
+      const stream = makeStream([
+        'data: {"answer_delta":"ten"}\n\n',
+        'data: {"answer_delta":"ancy"}\n\n',
+        'data: {"answer_delta":" law"}\n\n',
+        'data: [DONE]\n\n',
+      ])
+
+      return new Response(stream, {
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' },
+      })
+    }) as unknown as typeof fetch
+
+    try {
+      const data = await searchLaw('tenant law')
+      expect(data.answer).toBe('tenancy law')
+    } finally {
+      globalThis.fetch = originalFetch
+    }
+  })
 })

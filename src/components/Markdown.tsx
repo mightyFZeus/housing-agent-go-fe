@@ -1,4 +1,4 @@
-import { Fragment } from 'react'
+import { Fragment, useMemo } from 'react'
 import { normalizeAnswerText, normalizeSectionRefs } from '@/utils/formatting'
 
 type Node =
@@ -40,7 +40,7 @@ function parseInline(text: string): Array<string | { type: 'strong'; value: stri
   return out
 }
 
-const SECTION_RE = /(\[|\(|【)?Section\s*\d+(?:\([^)]+\))?(\]|\)|】)?/g
+const SECTION_RE = /(\[|\(|【)?Section\s*\d+(?:\s*\([^)]+\))?(\]|\)|】)?/g
 
 function splitSectionRefs(text: string): InlineToken[] {
   const out: InlineToken[] = []
@@ -125,15 +125,10 @@ function normalizeMarkdown(input: string): string {
   // If the text already has newlines, don't touch it
   if (input.includes('\n')) return input
 
-  // Split on list markers embedded in run-on text
-  // Handles patterns like "some text. -Item" or "text:-Item"
+  // Split on likely list markers embedded in run-on text.
   return input
-    // Insert newline before list markers preceded by sentence-ending punctuation or colons
-    .replace(/([.?!:;])\s*-\s+/g, '$1\n- ')
-    // Insert newline before list markers after a closing paren (e.g. "(Section 10). -")
-    .replace(/(\))\s*-\s+/g, '$1\n- ')
-    // Insert newline before sub-list markers (double dash or deeper)
-    .replace(/\s+- /g, '\n- ')
+    .replace(/([.?!:;])\s*[-*]\s*(?=\S)/g, '$1\n- ')
+    .replace(/(\))\s*[-*]\s*(?=\S)/g, '$1\n- ')
 }
 
 function parseMarkdown(input: string): Node[] {
@@ -204,7 +199,7 @@ function Inline({ text }: { text: string }) {
 function RenderNode({ node, depth }: { node: Node; depth: number }) {
   if (node.type === 'p') {
     return (
-      <p className="whitespace-pre-wrap break-words text-sm font-normal leading-[1.85] text-white/75 sm:text-base">
+      <p className="whitespace-pre-line break-words text-sm font-normal leading-7 text-white/75 [overflow-wrap:anywhere] sm:text-base sm:leading-8">
         <Inline text={node.text} />
       </p>
     )
@@ -214,8 +209,8 @@ function RenderNode({ node, depth }: { node: Node; depth: number }) {
     <ul
       className={
         depth === 0
-          ? 'ml-5 list-disc space-y-3 break-words text-sm font-normal text-white/70 sm:text-base'
-          : 'ml-5 mt-3 list-disc space-y-2 break-words text-sm font-normal text-white/65 sm:text-base'
+          ? 'ml-5 list-disc space-y-2 break-words text-sm font-normal leading-7 text-white/70 [overflow-wrap:anywhere] sm:text-base sm:leading-8'
+          : 'ml-5 mt-2 list-disc space-y-2 break-words text-sm font-normal leading-7 text-white/65 [overflow-wrap:anywhere] sm:text-base sm:leading-8'
       }
     >
       {node.items.map((item, idx) => (
@@ -229,10 +224,10 @@ function RenderNode({ node, depth }: { node: Node; depth: number }) {
 }
 
 export default function Markdown({ content }: { content: string }) {
-  const nodes = parseMarkdown(content)
+  const nodes = useMemo(() => parseMarkdown(content), [content])
 
   return (
-    <div className="space-y-6 break-words">
+    <div className="min-w-0 space-y-4 break-words [overflow-wrap:anywhere] sm:space-y-5">
       {nodes.map((node, idx) => (
         <RenderNode key={idx} node={node} depth={0} />
       ))}

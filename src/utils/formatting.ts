@@ -1,6 +1,6 @@
 export function normalizeSectionRefs(input: string): string {
   const text = input.replace(/\r\n/g, '\n')
-  const re = /(\[|\(|【)?Section\s*\d+(?:\([^)]+\))?(\]|\)|】)?/g
+  const re = /(\[|\(|【)?Section\s*\d+(?:\s*\([^)]+\))?(\]|\)|】)?/g
 
   let out = ''
   let lastIndex = 0
@@ -41,9 +41,12 @@ export function normalizeDisplayWhitespace(input: string): string {
   const lines = input.replace(/\r\n/g, '\n').split('\n')
   const cleaned = lines.map((line) => {
     const match = line.match(/^(\s*)/)
-    const prefix = match ? match[1] : ''
-    let rest = line.slice(prefix.length)
+    const rawPrefix = match ? match[1] : ''
+    const preservesIndent = /^\s*[-*]\s+/.test(line)
+    const prefix = preservesIndent ? rawPrefix : ''
+    let rest = line.slice(rawPrefix.length)
 
+    if (!preservesIndent) rest = rest.trimStart()
     rest = rest.replace(/[ \t]{2,}/g, ' ')
     rest = rest.replace(/\s+([.,;:!?])/g, '$1')
     rest = rest.replace(/\(\s+/g, '(').replace(/\s+\)/g, ')')
@@ -65,6 +68,7 @@ function normalizeCommonText(input: string): string {
   text = text.replace(/;([A-Za-z])/g, '; $1')
   text = text.replace(/:(?=\S)/g, ': ')
   text = text.replace(/([A-Za-z0-9])\(/g, '$1 (')
+  text = text.replace(/\bSection\s*(\d+)\s+\(/gi, 'Section $1(')
   text = text.replace(/\)\s*([A-Za-z])/g, ') $1')
   text = text.replace(/([a-z])([A-Z])/g, '$1 $2')
 
@@ -105,7 +109,9 @@ export function normalizeAnswerText(input: string): string {
   text = text.replace(/(^|[.!?]\s+)(Why[^:\n]{0,40}:)/gi, '$1\n\n$2\n')
   text = text.replace(/(^|[.!?]\s+)(Practical advice[^:\n]{0,60}:)/gi, '$1\n\n$2\n')
 
-  text = text.replace(/\s*-\s*(?=\S)/g, '\n- ')
+  text = text.replace(/(^|\n)[ \t]*[-*]\s*(?=\S)/g, '$1- ')
+  text = text.replace(/([.!?:;])\s*[-*]\s*(?=\S)/g, '$1\n- ')
+  text = text.replace(/(\))\s*[-*]\s*(?=\S)/g, '$1\n- ')
   text = text.replace(/\n{3,}/g, '\n\n')
 
   text = joinBrokenWords(text)

@@ -13,8 +13,8 @@ export default function AnswerCard({
     context: string
     isStreaming?: boolean
 }) {
-    const bottomRef = useRef<HTMLDivElement | null>(null)
     const shouldAutoScrollRef = useRef(true)
+    const scrollFrameRef = useRef<number | null>(null)
 
     useEffect(() => {
         const onScroll = () => {
@@ -31,13 +31,29 @@ export default function AnswerCard({
     useEffect(() => {
         if (!isStreaming) return
         if (!shouldAutoScrollRef.current) return
-        bottomRef.current?.scrollIntoView({ block: 'end' })
+
+        if (scrollFrameRef.current !== null) return
+
+        scrollFrameRef.current = window.requestAnimationFrame(() => {
+            scrollFrameRef.current = null
+            if (!shouldAutoScrollRef.current) return
+
+            const scrollRoot = document.scrollingElement ?? document.documentElement
+            window.scrollTo({ top: scrollRoot.scrollHeight, behavior: 'auto' })
+        })
     }, [isStreaming, answer, context])
 
+    useEffect(() => {
+        return () => {
+            if (scrollFrameRef.current === null) return
+            window.cancelAnimationFrame(scrollFrameRef.current)
+        }
+    }, [])
+
     return (
-        <section className="overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6">
+        <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 sm:rounded-3xl sm:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
+                <div className="w-full min-w-0">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="text-xs font-semibold uppercase tracking-wider text-amber-200/80">Answer</div>
                         <div className="flex shrink-0 gap-2">
@@ -59,7 +75,6 @@ export default function AnswerCard({
                             </div>
                         ) : null}
                         <Markdown content={answer} />
-                        <div ref={bottomRef} />
                     </div>
                 </div>
             </div>
